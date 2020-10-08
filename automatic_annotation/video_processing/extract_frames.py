@@ -2,6 +2,7 @@ import numpy as np
 from pathlib import Path
 import cv2
 import fire
+from .estimate_head_pose import process_video
 
 
 def sin_cos(x):
@@ -67,40 +68,47 @@ def get_significant_indices(angles, indices):
 def read_landmarks(filename):
     data = np.load(filename)
 
-    return data['indices'], data['points'], data['head_poses']
+    return data['indices'], data['points'], data['head_poses'], data['image_size']
 
 
 def main(path: str):
+    """Extract distinguished frames from a provided directory with video files.
+
+    Parameters
+    ----------
+    path : str
+        Path to a directory with video files
+    """
     path = Path(path)
+    assert path.is_dir(), "Provided path must be a directory"
     path_images = path / "images"
     path_images.mkdir(exist_ok=True)
 
     files = [p.resolve() for p in Path(path).glob("*") if p.suffix in [".mp4", ".webm", ".avi"]]
 
-    dir_landmarks = path / "npy_landmarks"
-
     for filename in files:
-        path_landmarks = dir_landmarks / f"{filename.stem}.npy"
-        if not path_landmarks.is_file():
-            continue
-        path_images_videofile = path_images / filename.stem
-        path_images_videofile.mkdir(exist_ok=True)
+        # TODO: add logger
+        print(f"Processing {filename}")
 
-        indices, landmarks, head_poses = read_landmarks(path_landmarks)
+        indices, landmarks, head_poses = process_video(str(filename))
 
-        angles = np.deg2rad(head_poses)
+        if len(indices) > 0:
+            path_images_videofile = path_images / filename.stem
+            path_images_videofile.mkdir(exist_ok=True)
 
-        mask = measure_deviation(angles) < 25
-        indices_ = indices[mask]
-        angles_ = angles[mask]
+            angles = np.deg2rad(head_poses)
 
-        significant_ind = get_significant_indices(angles_, indices_)
+            mask = measure_deviation(angles) < 25
+            indices_ = indices[mask]
+            angles_ = angles[mask]
 
-        for i in significant_ind:
-            cap = cv2.VideoCapture(str(filename))
-            cap.set(cv2.CAP_PROP_POS_FRAMES, i)
-            _, frame = cap.read()
-            cv2.imwrite(str(path_images_videofile/f"{i}.jpg"), frame)
+            significant_ind = get_significant_indices(angles_, indices_)
+
+            for i in significant_ind:
+                cap = cv2.VideoCapture(str(filename))
+                cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+                _, frame = cap.read()
+                cv2.imwrite(str(path_images_videofile/f"{i}.jpg"), frame)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,6 @@
 import numpy as np
 import dlib
 import cv2
-from configparser import ConfigParser
 from pathlib import Path
 import logging
 from random import shuffle
@@ -11,11 +10,7 @@ import fire
 
 logging.basicConfig(level=logging.INFO)
 
-config = ConfigParser()
-config.read('../config.ini')
-
-path_shape_predictor = str(Path(config['PATHS']["SHAPE_PREDICTOR_68_PATH"]) /
-                           config['PATHS']["SHAPE_PREDICTOR_68"])
+path_shape_predictor = "shape_predictor_68_face_landmarks.dat"
 
 # initialize dlib's face detector (HOG-based) and then create
 # the facial landmark predictor
@@ -23,18 +18,19 @@ detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor(path_shape_predictor)
 
 
-def save_landmarks(dir_images: str, image_filenames: np.ndarray, points: np.ndarray):
+def save_landmarks(dir_images: str, image_filenames: np.ndarray, points: np.ndarray, image_sizes: np.ndarray):
     dir_images = Path(dir_images)
     n, num_rows, num_col = points.shape
-    # points = points.reshape(-1, num_rows*num_col)
 
     wtype = np.dtype([('images', image_filenames.dtype),
-                      ('points', points.dtype, (num_rows, num_col))])
+                      ('points', points.dtype, (num_rows, num_col)),
+                      ('image_sizes', image_sizes.dtype, (2,))])
     w = np.empty(len(image_filenames), dtype=wtype)
     w['images'] = image_filenames
     w['points'] = points
+    w['image_sizes'] = image_sizes
 
-    np.save(dir_images.parent/f'landmarks_{dir_images.parts[-1]}.npy', w)
+    np.save(dir_images.parent / f'landmarks_{dir_images.parts[-1]}.npy', w)
 
 
 def dlib2rect(rect):
@@ -61,6 +57,7 @@ class Image:
         # load the input image, resize it, and convert it to grayscale
         self.image = cv2.imread(str(path_image))
         self.gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+        self.image_size = self.image.shape[:2]
 
         self.rect = self.detect_face(self.gray)
 
@@ -125,14 +122,20 @@ def detect_landmarks(gray: np.ndarray, rect):
     return shape2np(shape)
 
 
-def process_images(dir_images: str):
-    LIMIT = 100
+def process_images(dir_images: str, N: int = 1):
+    """Extract facial landmarks from face images with the help of dlib
+
+    Parameters
+    ----------
+    dir_images : str
+        Path to directory with facial images
+    N : int
+        Number of splits (split images into several directories)
+    """
+    assert Path(dir_images).is_dir(), "Provided path must be a directory"
     files = [p.resolve() for p in Path(dir_images).rglob("*") if p.suffix in [".png", ".jpg"]]
     shuffle(files)
 
-    N = len(files) // LIMIT
-    if N == 0:
-        N = 1
     logging.info(f'Detected {len(files)} files.')
     logging.info(f'Splitting into {N} chunks.')
 
@@ -146,6 +149,7 @@ def process_images(dir_images: str):
     for i, part in enumerate(np.array_split(np.array(files), N)):
         filenames = []
         all_points = []
+        image_sizes = []
 
         chunk_dir = Path(chunks_path / f"{i}")
         chunk_dir.mkdir(exist_ok=True)
@@ -157,12 +161,13 @@ def process_images(dir_images: str):
             if img.rect is not None:
                 filenames.append(str(path_image.parts[-1]))
                 all_points.append(img.points)
+                image_sizes.append(img.image_size)
                 copyfile(path_image, str(chunk_dir / path_image.parts[-1]))
 
         logging.info(f"Chunk {i} was processed.")
 
-        save_landmarks(f"{chunks_path}_{i}", np.array(filenames), np.array(all_points))
+        save_landmarks(f"{chunks_path}_{i}", np.array(filenames), np.array(all_points), np.array(image_sizes))
 
 
 if __name__ == "__main__":
-    process_images() # provide directory
+    fire.Fire(process_images)

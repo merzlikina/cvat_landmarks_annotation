@@ -42,13 +42,13 @@ def create_polyline_xml(root: minidom.Document, label: str, points: np.ndarray):
 
 
 def create_image_xml(root: minidom.Document, id: int, path: str,
-                     points: np.ndarray, height, width):
-
+                     points: np.ndarray, image_size: tuple):
+    height, width = image_size.astype(int)
     image = root.createElement('image')
-    image.setAttribute('id', id)
+    image.setAttribute('id', str(id))
     image.setAttribute('name', path)
-    image.setAttribute('height', height)
-    image.setAttribute('width', width)
+    image.setAttribute('height', str(height))
+    image.setAttribute('width', str(width))
 
     for key, (start, end) in FACIAL_LANDMARKS_68_IDXS.items():
         image.appendChild(create_polyline_xml(root, key, points[start:end, :]))
@@ -67,9 +67,10 @@ def get_annotations(landmarks_path: Path):
     landmarks = np.load(str(landmarks_path))
     filenames = landmarks['images']
     points = landmarks['points']
+    image_sizes = landmarks['image_sizes']
 
-    for ind, (filename, point) in enumerate(zip(filenames, points)):
-        annotations.appendChild(create_image_xml(root, ind, filename, point))
+    for ind, (filename, point, image_size) in enumerate(zip(filenames, points, image_sizes)):
+        annotations.appendChild(create_image_xml(root, ind, filename, point, image_size))
 
     with open(landmarks_path.parent / f"{landmarks_path.stem}.xml", 'w') as xml_file:
         root.writexml(xml_file, encoding='utf-8')

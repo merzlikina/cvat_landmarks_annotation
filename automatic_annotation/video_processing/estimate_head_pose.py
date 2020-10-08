@@ -3,14 +3,14 @@ https://github.com/yinguobing/head-pose-estimation
 """
 import cv2
 import numpy as np
-from pathlib import Path
+# from pathlib import Path
 
-from head_pose_estimation.mark_detector import MarkDetector
-from head_pose_estimation.pose_estimator import PoseEstimator
-from head_pose_estimation.stabilizer import Stabilizer
-import fire
+from .head_pose_estimation.mark_detector import MarkDetector
+from .head_pose_estimation.pose_estimator import PoseEstimator
+from .head_pose_estimation.stabilizer import Stabilizer
+# import fire
 
-print("OpenCV version: {}".format(cv2.__version__))
+# print("OpenCV version: {}".format(cv2.__version__))
 
 CNN_INPUT_SIZE = 128
 
@@ -32,27 +32,10 @@ def euler_angles(pose):
     return np.array([pitch, yaw, roll])
 
 
-def save_landmarks(filename: str, indices: np.ndarray, points: np.ndarray, head_poses: np.ndarray, facebox: np.ndarray):
-    n, num_rows, num_col = points.shape
-
-    wtype = np.dtype([('indices', indices.dtype), ('points', points.dtype, (num_rows, num_col)), ('head_poses', head_poses.dtype, (3,)), ('facebox', facebox.dtype, (4,))])
-    w = np.empty(n, dtype=wtype)
-
-    w['indices'] = indices
-    w['points'] = points
-    w['head_poses'] = head_poses
-    w['facebox'] = facebox
-
-    # TODO: debug facebox behavior
-    print(facebox)
-    np.save(filename, w)
-
-
 def process_video(path):
     landmarks = []
     head_poses = []
     indices = []
-    faceboxes = []
 
     cap = cv2.VideoCapture(path)
 
@@ -126,37 +109,11 @@ def process_video(path):
             landmarks.append(marks)
             head_poses.append(pose)
             indices.append(i)
-            faceboxes.append(facebox)
 
         i += 1
 
     landmarks = np.array(landmarks)
     head_poses = np.array(head_poses)
     indices = np.array(indices)
-    faceboxes = np.array(faceboxes)
 
-    return indices, landmarks, head_poses, faceboxes
-
-
-def main(path: str):
-    path = Path(path)
-
-    files = [p.resolve() for p in Path(path).glob("*") if p.suffix in [".mp4", ".webm", ".avi"]]
-
-    dir_landmarks = path / "npy_landmarks"
-    dir_landmarks.mkdir(exist_ok=True)
-
-    for i in files:
-        # TODO: add logger
-        print(f"Processing {i}")
-
-        if (dir_landmarks/f"{i.stem}.npy").is_file():
-            continue
-        indices, landmarks, head_poses, faceboxes = process_video(str(i))
-
-        if len(indices) > 0:
-            save_landmarks(str(dir_landmarks/f"{i.stem}.npy"), indices, landmarks, head_poses, faceboxes)
-
-
-if __name__ == '__main__':
-    fire.Fire(main)
+    return indices, landmarks, head_poses
