@@ -5,7 +5,7 @@ import os
 import numpy as np
 import fire
 
-from xml_template import create_xml
+from .xml_template import create_xml
 
 # create directory for zip unpacking in the root of the project
 path_annotated = (Path.cwd() / Path(__file__)).parent.parent / 'annotated'
@@ -97,13 +97,13 @@ def read_annotated(path: str):
     return points_all, filenames_all
 
 
-def main(path_zip: str):
-    assert Path(path_zip).is_dir(), "Provided path must be a directory with \
+def main(path_dir_zip: str):
+    assert Path(path_dir_zip).is_dir(), "Provided path must be a directory with \
                                      downloaded annotation .zip files"
 
-    points_all, filenames_all = read_annotated(path_zip)
+    points_all, filenames_all = read_annotated(path_dir_zip)
     create_xml(filenames_all, points_all)
 
 
 if __name__ == "__main__":
-    fire.Fire(main())
+    fire.Fire(main)
