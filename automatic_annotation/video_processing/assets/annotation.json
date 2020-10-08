@@ -1,0 +1,50 @@
+[
+    {
+      "name": "right_eyebrow",
+      "id": 10,
+      "color": "#1c9e70",
+      "attributes": []
+    },
+    {
+      "name": "jaw",
+      "id": 11,
+      "color": "#fa3253",
+      "attributes": []
+    },
+    {
+      "name": "outer_mouth",
+      "id": 12,
+      "color": "#3d3df5",
+      "attributes": []
+    },
+    {
+      "name": "inner_mouth",
+      "id": 13,
+      "color": "#33ddff",
+      "attributes": []
+    },
+    {
+      "name": "nose",
+      "id": 14,
+      "color": "#ffcc33",
+      "attributes": []
+    },
+    {
+      "name": "right_eye",
+      "id": 15,
+      "color": "#f6ae99",
+      "attributes": []
+    },
+    {
+      "name": "left_eye",
+      "id": 16,
+      "color": "#9d92e0",
+      "attributes": []
+    },
+    {
+      "name": "left_eyebrow",
+      "id": 17,
+      "color": "#ff8b37",
+      "attributes": []
+    }
+  ]
