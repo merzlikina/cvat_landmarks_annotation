@@ -57,11 +57,11 @@ After task creation, add generated `.xml` annotations as `CVAT 1.1` file
 
 
 ## Data postprocessing
-When manual correction of keypoints is finished, download thr resulting annotation:  
+When manual correction of keypoints is finished, download the resulting annotation:  
 ![](documentation/images/export_dataset.PNG)  
 
 
-If you want to train DLIB facial keypoints detector, generate reuslting .xml (or you can modify this script to your training format)  
+If you want to train DLIB facial keypoints detector, generate resulting .xml (or you can modify this script to your training format)  
 ```
 python -m postprocess.convert_dataset [directory with dataset zip files]
 ```
