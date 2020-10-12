@@ -46,7 +46,7 @@ python -m image_processing.images_landmarks [path to a directory with images] [N
 ## Working with CVAT
 > [CVAT] is free, online, interactive video and image annotation tool  for computer vision
 
-You can use provided by [CVAT] demo-server ([link](https://cvat.org/)) or host in on a custom server.
+You can use provided by [CVAT] demo-server ([link](https://cvat.org/)) or host it on a custom server.
 
 Upload your data as a task:  
 ![](documentation/images/create_task.PNG)  
