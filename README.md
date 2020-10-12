@@ -17,7 +17,7 @@ General workflow:
 - Extract new keypoints from .xml and use them for a keypoints custom detector training 
 
 ## Installation
-Scripts are Python 3.8-based and are compatible with CVAT 1.1 [(release)](#https://github.com/openvinotoolkit/cvat/releases/tag/v1.1.0)
+Scripts are Python 3.8-based and are compatible with CVAT 1.1 [(release)](https://github.com/openvinotoolkit/cvat/releases/tag/v1.1.0)
 ```
 pip install -r requirements.txt
 
@@ -35,7 +35,7 @@ If you have a frontal face video (for example a recording from a webcam where on
 cd automatic_annotation
 python -m video_processing.extract_frames [path to a directory with videofiles]
 ```
-This script is based on the [head_pose_estimation](#https://github.com/yinguobing/head-pose-estimation) repository ([branch `tf2`](#https://github.com/yinguobing/head-pose-estimation/tree/tf2)). It selects video frames where a cumulative change in pitch, yaw, roll of the head is larger than 15 degrees and creates a directory with extracted frames within the same directory.  
+This script is based on the [head_pose_estimation](https://github.com/yinguobing/head-pose-estimation) repository ([branch `tf2`](https://github.com/yinguobing/head-pose-estimation/tree/tf2)). It selects video frames where a cumulative change in pitch, yaw, roll of the head is larger than 15 degrees and creates a directory with extracted frames within the same directory.  
 
 **images**  
 CVAT has a size limit for an uploading directory. If you hit the limit, you can split your dataset into N parts by providing an N cmd argument (1 by default).
@@ -46,7 +46,7 @@ python -m image_processing.images_landmarks [path to a directory with images] [N
 ## Working with CVAT
 > [CVAT] is free, online, interactive video and image annotation tool  for computer vision
 
-You can use provided by [CVAT] demo-server ([link](#https://cvat.org/)) or host in on a custom server.
+You can use provided by [CVAT] demo-server ([link](https://cvat.org/)) or host in on a custom server.
 
 Upload your data as a task:  
 ![](documentation/images/create_task.PNG)  
