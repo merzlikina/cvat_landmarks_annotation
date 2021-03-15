@@ -40,7 +40,6 @@ def process_video(path):
     cap = cv2.VideoCapture(path)
 
     _, sample_frame = cap.read()
-    i = 1
     # Introduce mark_detector to detect landmarks.
     mark_detector = MarkDetector()
 
@@ -57,7 +56,7 @@ def process_video(path):
         cov_measure=0.1) for _ in range(6)]
 
     tm = cv2.TickMeter()
-
+    i = 0
     while True:
         # Read frame, crop it, flip it, suits your needs.
         frame_got, frame = cap.read()
@@ -111,9 +110,9 @@ def process_video(path):
             indices.append(i)
 
         i += 1
-
-    landmarks = np.array(landmarks)
-    head_poses = np.array(head_poses)
-    indices = np.array(indices)
+    # cut first 4 values (these head pose angles are very noisy)
+    landmarks = np.array(landmarks)[4:]
+    head_poses = np.array(head_poses)[4:]
+    indices = np.array(indices)[4:]
 
     return indices, landmarks, head_poses

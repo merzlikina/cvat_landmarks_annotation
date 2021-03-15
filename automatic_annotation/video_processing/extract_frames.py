@@ -3,6 +3,8 @@ from pathlib import Path
 import cv2
 import fire
 from .estimate_head_pose import process_video
+ALLOWED_DEVIATION = 35
+CUMMULATIVE_CHANGE = 15
 
 
 def sin_cos(x):
@@ -30,10 +32,14 @@ def to_angle(m: np.ndarray) -> float:
 
 
 def measure_deviation(angles):
+    """Measure deviation of head position from still position
+    (to later discard strong head rotations)
+    """
     deviations = []
     zero_inv = np.linalg.inv(from_euler_angles(0, 0, 0))
     for angle in angles:
-        deviations.append(np.rad2deg(to_angle(from_euler_angles(*angle) @ zero_inv)))
+        deviations.append(np.rad2deg(
+            to_angle(from_euler_angles(*angle) @ zero_inv)))
 
     return np.array(deviations)
 
@@ -44,7 +50,7 @@ def diff_points(x1, x2):
 
 def diff(arr, point, ind):
     for i, x in enumerate(arr):
-        if diff_points(x, point) > 15:
+        if diff_points(x, point) > CUMMULATIVE_CHANGE:
             return i + ind
     return ind
 
@@ -71,6 +77,46 @@ def read_landmarks(filename):
     return data['indices'], data['points'], data['head_poses'], data['image_size']
 
 
+def extract_frames(filename):
+    path_images = Path(filename).parent / "images"
+    path_images.mkdir(exist_ok=True)
+
+    indices, landmarks, head_poses = process_video(str(filename))
+
+    if len(indices) > 0:
+        path_images_videofile = path_images / Path(filename).stem
+        path_images_videofile.mkdir(exist_ok=True)
+
+        angles = np.deg2rad(head_poses)
+        # discard head positions where head is "too" rotated
+        mask = measure_deviation(angles) < ALLOWED_DEVIATION
+        indices_ = indices[mask]
+        angles_ = angles[mask]
+        # all headposes vere too extreme
+        if len(indices_) == 0:
+            return
+        significant_ind = get_significant_indices(angles_, indices_)
+        # deal with opencv issue with reading end of webm video
+        if Path(filename).suffix == '.webm':
+            cap = cv2.VideoCapture(str(filename))
+            i = 0
+            while cap.isOpened() and i <= max(significant_ind):
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                if i in significant_ind:
+                    cv2.imwrite(str(path_images_videofile/f"{i}.jpg"), frame)
+                i += 1
+            cap.release()
+        else:
+            for i in significant_ind:
+                cap = cv2.VideoCapture(str(filename))
+                cap.set(cv2.CAP_PROP_POS_FRAMES, i)
+                _, frame = cap.read()
+                cv2.imwrite(str(path_images_videofile/f"{i}.jpg"), frame)
+                cap.release()
+
+
 def main(path: str):
     """Extract distinguished frames from a provided directory with video files.
 
@@ -79,36 +125,16 @@ def main(path: str):
     path : str
         Path to a directory with video files
     """
-    path = Path(path)
+    # deal with bash "\ " inserting for paths with spaces
+    path = Path(path.replace("\ ", " "))
     assert path.is_dir(), "Provided path must be a directory"
-    path_images = path / "images"
-    path_images.mkdir(exist_ok=True)
 
-    files = [p.resolve() for p in Path(path).glob("*") if p.suffix in [".mp4", ".webm", ".avi"]]
-
+    files = [p.resolve() for p in Path(path).glob(
+        "*") if p.suffix in [".mp4", ".webm", ".avi"]]
     for filename in files:
         # TODO: add logger
         print(f"Processing {filename}")
-
-        indices, landmarks, head_poses = process_video(str(filename))
-
-        if len(indices) > 0:
-            path_images_videofile = path_images / filename.stem
-            path_images_videofile.mkdir(exist_ok=True)
-
-            angles = np.deg2rad(head_poses)
-
-            mask = measure_deviation(angles) < 25
-            indices_ = indices[mask]
-            angles_ = angles[mask]
-
-            significant_ind = get_significant_indices(angles_, indices_)
-
-            for i in significant_ind:
-                cap = cv2.VideoCapture(str(filename))
-                cap.set(cv2.CAP_PROP_POS_FRAMES, i)
-                _, frame = cap.read()
-                cv2.imwrite(str(path_images_videofile/f"{i}.jpg"), frame)
+        extract_frames(str(filename))
 
 
 if __name__ == "__main__":

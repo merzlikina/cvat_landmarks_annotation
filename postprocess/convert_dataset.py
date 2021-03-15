@@ -4,15 +4,17 @@ import xml.etree.ElementTree as ET
 import os
 import numpy as np
 import fire
-
+import json
 from .xml_template import create_xml
 
 # create directory for zip unpacking in the root of the project
 path_annotated = (Path.cwd() / Path(__file__)).parent.parent / 'annotated'
 path_annotated.mkdir(exist_ok=True)
 
-facial_parts = ['jaw', 'right_eyebrow', 'left_eyebrow', 'nose', 'right_eye',
-                'left_eye', 'outer_mouth', 'inner_mouth']
+assert Path('labels.json').is_file, "No labels.json file is found"
+with open('labels.json') as f:
+    data = json.load(f)
+FACIAL_PARTS = [i['name'] for i in data]
 
 
 def str2array(string: str):
@@ -20,8 +22,20 @@ def str2array(string: str):
 
 
 def convert_points(points: dict):
-    all_points = ','.join([points.get(key) for key in facial_parts])
-    return str2array(all_points)
+    """Converts strings of facial parts to common array with landmarks 
+    (order is set by FACIAL_PARTS)
+
+    Parameters
+    ----------
+    points : dict
+
+    Returns
+    -------
+    np.array or None (if there were problems with annotation )
+    """
+    if len(points.keys()) == len(FACIAL_PARTS):
+        all_points = ','.join([points.get(key) for key in FACIAL_PARTS])
+        return str2array(all_points)
 
 
 def parse_cvat_annotation(path: str):
@@ -31,12 +45,14 @@ def parse_cvat_annotation(path: str):
     filenames = []
 
     for image in root.findall('image'):
-        filenames.append(image.attrib['name'])
 
         image_element = {}
         for polyline in image:
             image_element[polyline.attrib['label']] = polyline.attrib['points']
-        points.append(convert_points(image_element))
+        converted = convert_points(image_element)
+        if converted is not None:
+            points.append(converted)
+            filenames.append(image.attrib['name'])
 
     return filenames, points
 
@@ -60,7 +76,8 @@ def process_zip(path_zip: str):
         zip_ref.extractall(str(res_dir))
 
     try:
-        filenames, points = parse_cvat_annotation(str(res_dir / 'annotations.xml'))
+        filenames, points = parse_cvat_annotation(
+            str(res_dir / 'annotations.xml'))
         filenames = expand_filenames(filenames, zip_filename)
     except Exception as e:
         print(e)

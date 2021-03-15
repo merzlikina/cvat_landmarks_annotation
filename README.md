@@ -35,7 +35,8 @@ If you have a frontal face video (for example a recording from a webcam where on
 cd automatic_annotation
 python -m video_processing.extract_frames [path to a directory with videofiles]
 ```
-This script is based on the [head_pose_estimation](https://github.com/yinguobing/head-pose-estimation) repository ([branch `tf2`](https://github.com/yinguobing/head-pose-estimation/tree/tf2)). It selects video frames where a cumulative change in pitch, yaw, roll of the head is larger than 15 degrees and creates a directory with extracted frames within the same directory.  
+This script is based on the [head_pose_estimation](https://github.com/yinguobing/head-pose-estimation) repository ([branch `tf2`](https://github.com/yinguobing/head-pose-estimation/tree/tf2)). It discards frames with strong head movements (where sum of pitch, yaw, roll is higher than `ALLOWED_DEVIATION`) and selects video frames where a cumulative change in pitch, yaw, roll of the head is larger than `CUMMULATIVE_CHANGE` degrees and creates a directory with extracted frames within the same directory.  
+
 
 **images**  
 CVAT has a size limit for an uploading directory. If you hit the limit, you can split your dataset into N parts by providing an N cmd argument (1 by default).
